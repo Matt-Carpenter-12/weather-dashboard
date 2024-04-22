@@ -24,5 +24,39 @@ function getFiveDayForcast(latParam, logParam) {
 )}
 
 function displayFiveDayForcast(dataParam) {
-console.log(dataParam)
-}
+        const forecastList = dataParam.list;
+        const forecastData = forecastList.filter(item => item.dt_txt.includes('12:00:00')); // Filter to get one forecast per day
+    
+        // Clear any previous forecast data
+        const forecastContainer = document.querySelector(".five-day-forcast");
+        forecastContainer.innerHTML = "";
+    
+        // Loop through each day's forecast data and display it
+        forecastData.forEach(item => {
+            const date = new Date(item.dt * 1000); // Convert timestamp to date
+            const temperature = item.main.temp; // Temperature in Kelvin, convert as needed
+            const description = item.weather[0].description; // Weather description
+    
+            // Create elements to display the forecast
+            const forecastItem = document.createElement("div");
+            forecastItem.classList.add("forecast-item");
+    
+            const forecastDate = document.createElement("div");
+            forecastDate.classList.add("forecast-date");
+            forecastDate.textContent = date.toDateString();
+    
+            const forecastTemperature = document.createElement("div");
+            forecastTemperature.classList.add("forecast-temperature");
+            forecastTemperature.textContent = `${temperature} °C`;
+    
+            const forecastDescription = document.createElement("div");
+            forecastDescription.classList.add("forecast-description");
+            forecastDescription.textContent = description;
+    
+            // Append elements to the forecast container
+            forecastItem.appendChild(forecastDate);
+            forecastItem.appendChild(forecastTemperature);
+            forecastItem.appendChild(forecastDescription);
+            forecastContainer.appendChild(forecastItem);
+        });
+    }
