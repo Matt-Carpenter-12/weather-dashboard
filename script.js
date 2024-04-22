@@ -24,8 +24,9 @@ function getFiveDayForcast(latParam, logParam) {
 )}
 
 function displayFiveDayForcast(dataParam) {
+        // Filter to get one forecast per day
         const forecastList = dataParam.list;
-        const forecastData = forecastList.filter(item => item.dt_txt.includes('12:00:00')); // Filter to get one forecast per day
+        const forecastData = forecastList.filter(item => item.dt_txt.includes('12:00:00')); 
     
         // Clear any previous forecast data
         const forecastContainer = document.querySelector(".five-day-forcast");
