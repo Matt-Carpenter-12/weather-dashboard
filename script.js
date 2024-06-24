@@ -1,63 +1,93 @@
-function todaysWeather() {
-        const apiKey = '62e39a460994fa6bbd06ea1d60166c70'
-        const searchCity = document.querySelector("#search-bar").value 
-        fetch(`https://api.openweathermap.org/data/2.5/weather?q=${searchCity}&units=metric&appid=${apiKey}`).then((response) => response.json()).then((data) => {
-        document.querySelector(".city").innerHTML = data.name
-        document.querySelector(".temp").innerHTML = `${data.main.temp}°` 
-        document.querySelector(".humidity").innerHTML = `Humidity: ${data.main.humidity}%`
-        document.querySelector(".wind").innerHTML = `${data.wind.speed} KPH`
-        console.log(data)
-        console.log(data.coord.lat)
-        console.log(data.coord.lon)
-        getFiveDayForcast(data.coord.lat, data.coord.lon) //looping back into the previous function to create and argument for the  params
-})
-}
-document.addEventListener("DOMContentLoaded", function(){
-    const searchBTN = document.querySelector("#searchBTN")
-    searchBTN.addEventListener("click", todaysWeather)})
+document.getElementById('search-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const city = document.getElementById('city-input').value;
+    getWeather(city);
+    document.getElementById('city-input').value = '';
+});
 
-function getFiveDayForcast(latParam, logParam) {
-        const apiKey = '62e39a460994fa6bbd06ea1d60166c70'
-        fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${latParam}&lon=${logParam}&appid=${apiKey}`).then((response) => response.json()).then((data) => {
-        displayFiveDayForcast(data)
-}
-)}
+function getWeather(city) {
+    const apiKey = '62e39a460994fa6bbd06ea1d60166c70'; // Your provided API key
+    const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
 
-function displayFiveDayForcast(dataParam) {
-        // Filter to get one forecast per day
-        const forecastList = dataParam.list;
-        const forecastData = forecastList.filter(item => item.dt_txt.includes('12:00:00')); 
-    
-        // Clear any previous forecast data
-        const forecastContainer = document.querySelector(".five-day-forcast");
-        forecastContainer.innerHTML = "";
-    
-        // Loop through each day's forecast data and display it
-        forecastData.forEach(item => {
-            const date = new Date(item.dt * 1000); // Convert timestamp to date
-            const temperature = item.main.temp; // Temperature in Kelvin, convert as needed
-            const description = item.weather[0].description; // Weather description
-    
-            // Create elements to display the forecast
-            const forecastItem = document.createElement("div");
-            forecastItem.classList.add("forecast-item");
-    
-            const forecastDate = document.createElement("div");
-            forecastDate.classList.add("forecast-date");
-            forecastDate.textContent = date.toDateString();
-    
-            const forecastTemperature = document.createElement("div");
-            forecastTemperature.classList.add("forecast-temperature");
-            forecastTemperature.textContent = `${temperature} °C`;
-    
-            const forecastDescription = document.createElement("div");
-            forecastDescription.classList.add("forecast-description");
-            forecastDescription.textContent = description;
-    
-            // Append elements to the forecast container
-            forecastItem.appendChild(forecastDate);
-            forecastItem.appendChild(forecastTemperature);
-            forecastItem.appendChild(forecastDescription);
-            forecastContainer.appendChild(forecastItem);
-        });
+    fetch(currentWeatherUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayCurrentWeather(data);
+            addCityToHistory(city);
+        })
+        .catch(error => console.error('Error fetching current weather:', error));
+
+    fetch(forecastUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => displayForecast(data))
+        .catch(error => console.error('Error fetching weather forecast:', error));
+}
+
+function displayCurrentWeather(data) {
+    const weatherSection = document.getElementById('current-weather');
+    weatherSection.innerHTML = `
+        <div class="weather-card">
+            <h2>${data.name} (${new Date().toLocaleDateString()})</h2>
+            <img src="http://openweathermap.org/img/wn/${data.weather[0].icon}.png" alt="weather icon">
+            <p>Temperature: ${data.main.temp} °C</p>
+            <p>Humidity: ${data.main.humidity}%</p>
+            <p>Wind Speed: ${data.wind.speed} m/s</p>
+        </div>
+    `;
+}
+
+function displayForecast(data) {
+    const weatherSection = document.getElementById('future-weather');
+    weatherSection.innerHTML = '<h2>5-Day Forecast</h2>';
+
+    for (let i = 0; i < data.list.length; i += 8) {
+        const forecast = data.list[i];
+        weatherSection.innerHTML += `
+            <div class="weather-card">
+                <h2>${new Date(forecast.dt_txt).toLocaleDateString()}</h2>
+                <img src="http://openweathermap.org/img/wn/${forecast.weather[0].icon}.png" alt="weather icon">
+                <p>Temperature: ${forecast.main.temp} °C</p>
+                <p>Humidity: ${forecast.main.humidity}%</p>
+                <p>Wind Speed: ${forecast.wind.speed} m/s</p>
+            </div>
+        `;
     }
+}
+
+function addCityToHistory(city) {
+    let history = JSON.parse(localStorage.getItem('weatherHistory')) || [];
+    
+    if (!history.includes(city)) {
+        history.push(city);
+        localStorage.setItem('weatherHistory', JSON.stringify(history));
+    }
+    
+    renderSearchHistory();
+}
+
+function renderSearchHistory() {
+    const historySection = document.getElementById('search-history');
+    let history = JSON.parse(localStorage.getItem('weatherHistory')) || [];
+
+    historySection.innerHTML = '';
+    history.forEach(city => {
+        const cityButton = document.createElement('button');
+        cityButton.textContent = city;
+        cityButton.addEventListener('click', () => getWeather(city));
+        historySection.appendChild(cityButton);
+    });
+}
+
+// Initial render of search history
+renderSearchHistory();
